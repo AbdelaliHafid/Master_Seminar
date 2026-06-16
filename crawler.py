@@ -12,11 +12,16 @@ target_url = "https://www.scrapingcourse.com/ecommerce/"
 
 #target_url = "https://planningtank.com/computer-applications/data-processing"
 
+#target_url = "https://quotes.toscrape.com"
+
 #image directory
 #os.makedirs("images", exist_ok=True)
 
 #screenshots directory
 #os.makedirs("screenshots", exist_ok=True)
+
+downloaded_images = set()
+
 
 #resetting image dir
 files = glob.glob('images/*')
@@ -91,21 +96,26 @@ def crawler():
 
         # storing Images's Links
         for img in images:
-         src = img.get("src") or img.get("data-src") or img.get("data-original")
-
-         if not src:
-            continue
+            src = img.get("src") or img.get("data-src") or img.get("data-original")
+            if not src:
+                continue
 
         
 
         # images absolute Urls 
         
-        if not src.startswith("http"):
-            absolute_img_url = requests.compat.urljoin(current_url, src)
-        else:
-            absolute_img_url = src
         
-        image_urls.append(absolute_img_url)
+            if not src.startswith("http"):
+                absolute_img_url = requests.compat.urljoin(current_url, src)
+            else:
+                absolute_img_url = src
+        
+
+            image_urls.append(absolute_img_url)
+        
+            if absolute_img_url in downloaded_images:
+                continue
+            downloaded_images.add(absolute_img_url)
 
 
 
@@ -116,32 +126,32 @@ def crawler():
 
         #Downloading Image from Url
         # and checking if the image link is a duplicate with md5 and encode
-        try:
-             image_response = requests.get(absolute_img_url, timeout=10)
+            try:
+                image_response = requests.get(absolute_img_url, timeout=10)
 
-             if image_response.status_code == 200:
-                #filename = absolute_img_url.split("/")[-1]
-                 filename = (hashlib.md5(absolute_img_url.encode()).hexdigest()+ ".jpg")
+                if image_response.status_code == 200:
+                    #filename = absolute_img_url.split("/")[-1]
+                    filename = (hashlib.md5(absolute_img_url.encode()).hexdigest()+ ".jpg")
                  
-                 filepath = os.path.join("images",filename)
+                    filepath = os.path.join("images",filename)
 
-                 if os.path.exists(filepath):
-                     print(f"Image already exists:{filename}")
-                 else:
-                     with open(filepath,"wb") as f:
-                         f.write(image_response.content)
+                    if os.path.exists(filepath):
+                        print(f"Image already exists:{filename}")
+                    else:
+                        with open(filepath,"wb") as f:
+                            f.write(image_response.content)
                     
-                     print(f"Downloaded: {filename}")
+                        print(f"Downloaded: {filename}")
 
              
 
-        except Exception as e:
-            print("Image download failed:", e)
+            except Exception as e:
+                print("Image download failed:", e)
 
 
 
 
-        #taking screenshots with playwright
+        #taking screenshots with playwright old version
 
 
         #with sync_playwright() as p:
@@ -196,13 +206,17 @@ def crawler():
             #print("Images found:", len(image_urls))
             #print(f"Images Links: {image_urls}" )
 
+
+
+    #taking screenshots with playwright 
     with sync_playwright() as p:
         browser = p.chromium.launch()
-        for url in urls_to_visit:
-            page = browser.new_page()
-            page.goto(url)
 
-            filename = hashlib.md5(url.encode()).hexdigest() + ".png"
+        for current_url in visited_urls:
+            page = browser.new_page()
+            page.goto(current_url)
+
+            filename = hashlib.md5(current_url.encode()).hexdigest() + ".png"
             path = os.path.join("screenshots", filename)
 
             page.screenshot(path=path, full_page=True)
@@ -210,7 +224,6 @@ def crawler():
             page.close()
 
         browser.close()
-
 
 
 
