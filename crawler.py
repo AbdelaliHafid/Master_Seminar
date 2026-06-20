@@ -121,7 +121,15 @@ def is_valid_page(url):
 
 
 
-
+def safe_goto(page, url, retries=2):
+    for i in range(retries):
+        try:
+            page.goto(url, timeout=30000, wait_until="domcontentloaded")
+            return True
+        except Exception as e:
+            if i == retries - 1:
+                print(f"[PLAYWRIGHT FAILED] {url} -> {repr(e)}")
+                return False
 
 
 
@@ -325,21 +333,14 @@ def crawler():
 
 
     #taking screenshots with playwright 
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                if not safe_goto(page, current_url):
+                    continue   # <-- MUST be inside the while loop
 
-        for current_url in visited_urls:
-            page = browser.new_page()
-            page.goto(current_url)
-
-            filename = hashlib.md5(current_url.encode()).hexdigest() + ".png"
-            path = os.path.join("screenshots", filename)
-
-            page.screenshot(path=path, full_page=True)
-
-            page.close()
-
-        browser.close()
+                html = page.content()
+                browser.close()
 
 
 
