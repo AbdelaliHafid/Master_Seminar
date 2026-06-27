@@ -15,17 +15,20 @@ import requests
 from collections import deque
 from urllib.parse import urlparse, urljoin
 from typing import List, Dict, Any
+from datetime import datetime
+
 
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright, Page
 from ddgs import DDGS
 from ollama import chat
 
-# --- Configuration & Constants ---
+# --- Configuration & Timestamping ---
+TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+DB_NAME = f"crawler_{TIMESTAMP}.db"
+IMAGE_DIR = f"images_{TIMESTAMP}"
+SCREENSHOT_DIR = f"screenshots_{TIMESTAMP}"
 MAX_QUEUE = 5
-DB_NAME = "crawler.db"
-IMAGE_DIR = "images"
-SCREENSHOT_DIR = "screenshots"
 
 HEADERS = {
     "User-Agent": (
@@ -53,7 +56,8 @@ def setup_database() -> sqlite3.Connection:
     cursor = conn.cursor()
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS pages (
-        url TEXT PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        url TEXT UNIQUE,
         title TEXT,
         text TEXT,
         score INTEGER,
@@ -104,6 +108,7 @@ def clean_text(text: str) -> str:
 
 def ai_rank(prompt: str, text: str) -> int:
     """Uses the local LLM to score the page relevance from 0 to 10."""
+    result = ""
     text = clean_text(text)
     try:
         response = chat(
@@ -122,7 +127,8 @@ def ai_rank(prompt: str, text: str) -> int:
         result = response["message"]["content"].strip()
         score = int(result)
         return max(0, min(10, score))
-    except Exception:
+    except Exception as e:
+        print(f"[WARN] AI Rank failed: {e}. Analyzing raw response: {result[:50]}")
         match = re.search(r"\b(10|[0-9])\b", result if 'result' in locals() else "")
         return int(match.group()) if match else 0
 
@@ -334,7 +340,7 @@ def run_crawler(prompt: str, initial_urls: List[str], db_conn: sqlite3.Connectio
             screenshot_page.close()
 
 if __name__ == "__main__":
-    print("--- AI OSINT Crawler ---")
+    print("--- AI Crawler ---")
     initialize_directories()
     db_connection = setup_database()
     
