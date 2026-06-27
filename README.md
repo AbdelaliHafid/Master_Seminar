@@ -1,1 +1,23 @@
-"# Master_Seminar" 
+# AI-Powered Crawler
+
+An intelligent web crawler built in Python that searches the web, extracts data, and uses a local Large Language Model (LLM) to evaluate, summarize, and classify the findings.
+
+## Features
+* **Hybrid Scraping:** Attempts fast HTTP requests first, automatically falling back to full DOM rendering via Playwright if anti-bot protections or JavaScript walls are detected.
+* **On-the-fly AI Analysis:** Uses a locally hosted `Mistral` model (via Ollama) to read webpage content and score its relevance to your search prompt (0-10).
+* **Automated OSINT Summaries:** If a page ranks highly, the LLM automatically generates a 5-bullet-point cybersecurity-focused summary and a JSON classification of potential threats (Attack Types, Malware Families, TTPs).
+* **Media Extraction:** Intelligently filters out SEO spam, trackers, and UI icons, downloading only relevant images to a local directory.
+* **Evidence Capture:** Takes a full-page, headless Chromium screenshot of every visited page for record-keeping.
+* **SQLite Storage:** Saves all textual data, URLs, LLM scores, and summaries cleanly into a local SQLite database.
+
+## Prerequisites
+
+Before running the crawler, ensure you have the following installed on your system:
+* **Python 3.8+**
+* **Ollama** (for running the local LLM)
+
+### Install Ollama & Mistral (Linux/macOS)
+```bash
+curl -fsSL [https://ollama.com/install.sh](https://ollama.com/install.sh) | sh
+ollama pull mistral
+ollama serve
