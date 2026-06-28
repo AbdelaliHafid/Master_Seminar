@@ -2,7 +2,7 @@
 AI-Powered Crawler
 ------------------------
 Crawls the web based on a search prompt, extracts text and images, 
-takes full-page screenshots, and uses a local LLM (Ollama/Mistral) 
+takes full-page screenshots and saves everything in a local Database, and uses a local LLM (Ollama/Mistral) 
 to rank, summarize, and classify the findings.
 """
 
@@ -87,15 +87,9 @@ def save_page(conn: sqlite3.Connection, page_data: Dict[str, Any]):
 
 # --- File System Management ---
 def initialize_directories():
-    """Creates required directories and clears out old files."""
+    """Creates required timestamped directories for the current run."""
     for directory in [IMAGE_DIR, SCREENSHOT_DIR]:
         os.makedirs(directory, exist_ok=True)
-        # Clear existing files
-        for f in glob.glob(f"{directory}/*"):
-            try:
-                os.remove(f)
-            except OSError as e:
-                print(f"Error removing file {f}: {e}")
 
 # --- AI & LLM Functions ---
 def clean_text(text: str) -> str:
@@ -216,7 +210,7 @@ def is_real_image(url: str) -> bool:
     valid_ext = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg")
     return path.endswith(valid_ext)
 
-# --- Main Crawler Logic ---
+# --- Main Crawler ---
 def run_crawler(prompt: str, initial_urls: List[str], db_conn: sqlite3.Connection):
     """Executes the main crawling loop using Requests and Playwright."""
     urls_to_visit = deque(initial_urls)
